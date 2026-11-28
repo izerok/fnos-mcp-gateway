@@ -1,0 +1,1 @@
+{"default_profile":"home","profiles":{"home":{"description":"家里的 fnOS","host":"192.168.1.10","port":5667,"scheme":"https"},"office":{"description":"办公室 fnOS","host":"nas.office.example.com","port":443,"scheme":"https"}}}

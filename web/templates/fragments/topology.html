@@ -1,0 +1,39 @@
+{# FR-36: optional connection topology. Read-only, ACL-scoped, plain
+   server-rendered markup — no chart library. The gateway is a single
+   node; each visible profile hangs off it, colored by its CURRENT
+   badge. BADGES keys (connected/unreachable/...) map to the three
+   status colors via BADGE_COLOR; config-error profiles render as a
+   dashed bad node. Meta line is Chinese only (no raw badge keys). #}
+{% set BADGE_COLOR = {
+  "connected": "ok", "unverified": "warn", "loggedout": "warn",
+  "expired": "bad", "permission": "bad", "unreachable": "bad",
+  "tls": "bad", "config": "bad", "untested": "idle"} %}
+{% set BADGE_TEXT = {
+  "connected": "已连接", "unverified": "未验证登录", "loggedout": "未登录",
+  "expired": "登录失效", "permission": "权限不足", "unreachable": "网络不可达",
+  "tls": "TLS 错误", "config": "配置错误", "untested": "未测试"} %}
+<div class="topology" id="topologyView" role="img"
+     aria-label="连接拓扑：MCP 网关到各机器">
+  <div class="topo-gateway">
+    <span class="topo-node gateway">MCP 网关</span>
+    <span class="sub topo-endpoint mono">{{ mcp_public_url or "/mcp" }}</span>
+  </div>
+  <div class="topo-links">
+    {% for node in nodes %}
+    {% set color = BADGE_COLOR.get(node.badge, "idle") %}
+    <div class="topo-link {{ 'config' if node.badge == 'config' else '' }}">
+      <span class="topo-line {{ color }}"></span>
+      <span class="topo-node {{ color }}">
+        <span class="topo-name mono"><i class="dot {{ color }}"></i>{{ node.name }}</span>
+        {% if node.target %}<span class="topo-target mono">{{ node.target }}</span>{% else %}<span class="topo-target">配置错误</span>{% endif %}
+        <span class="topo-meta">
+          {% if node.identity %}身份 {{ node.identity }}{% else %}{{ BADGE_TEXT.get(node.badge, node.badge) }}{% endif %}
+          {% if node.latency_ms is not none %} · {{ node.latency_ms }}ms{% endif %}
+        </span>
+      </span>
+    </div>
+    {% else %}
+    <p class="empty">没有 ACL 内可显示的机器。</p>
+    {% endfor %}
+  </div>
+</div>

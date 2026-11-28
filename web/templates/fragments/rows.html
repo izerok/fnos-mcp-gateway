@@ -1,0 +1,6 @@
+{% for row in rows %}{% include "fragments/row.html" %}{% endfor %}
+{% if not rows %}
+<div class="empty" role="status">
+  {% if empty_bucket and empty_bucket != "all" %}没有符合筛选的机器。{% else %}还没有可显示的机器。{% endif %}
+</div>
+{% endif %}

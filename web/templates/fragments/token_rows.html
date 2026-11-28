@@ -1,0 +1,48 @@
+<div id="tokenRows"{% if oob %} hx-swap-oob="outerHTML"{% endif %}>
+{% if token_error %}
+<div class="inline-error" role="alert"><p>{{ token_error }}</p></div>
+{% elif tokens %}
+<ul class="token-list">
+  {% for t in tokens %}
+  <li class="token-row" data-id="{{ t.id }}">
+    <div class="token-main">
+      <div class="token-name">
+        <span class="mono">{{ t.name }}</span>
+        <span class="tag {{ 'warn' if t.role == 'operator' else 'ok' }}">{{ '管理员' if t.role == 'admin' else '操作员' }}</span>
+        {% if t.all_machines %}<span class="tag ok">全部机器 *</span>{% endif %}
+        {% if not t.copyable %}<span class="tag warn" title="创建于旧版本或会话密钥已更换；轮换后可复制">早期密钥</span>{% endif %}
+      </div>
+      <div class="token-meta">
+        <span class="mono key-fp">指纹 {{ t.fingerprint }}</span>
+        <span>ACL：{% if t.all_machines %}当前及以后所有机器{% elif t.profiles %}{{ t.profiles | join('、') }}{% else %}无（看不到任何机器）{% endif %}</span>
+        {% if t.capabilities %}<span>能力：{% for c in t.capabilities %}{{ '登录管理' if c == 'manage_login' else '机器管理' }}{% if not loop.last %}、{% endif %}{% endfor %}</span>{% endif %}
+        {% if t.created_at %}<span>创建于 {{ t.created_at[:10] }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="token-actions">
+      {% if t.copyable %}
+      <div class="token-copy-actions">
+        <button class="btn small" type="button" data-act="token-copy"
+                data-id="{{ t.id }}" data-mode="key">复制密钥</button>
+        <button class="btn small" type="button" data-act="token-copy"
+                data-id="{{ t.id }}" data-mode="config"
+                title="复制包含这把密钥的 mcpServers 客户端配置">复制 JSON</button>
+      </div>
+      {% endif %}
+      <div class="token-manage-actions">
+        <button class="btn small" type="button"
+                hx-get="/api/tokens/{{ t.id }}/edit/form"
+                hx-target="#adminModalBody" hx-swap="innerHTML">编辑</button>
+        <button class="btn small" type="button"
+                data-act="token-rotate" data-id="{{ t.id }}" data-name="{{ t.name }}">轮换</button>
+        <button class="btn small danger-soft" type="button"
+                data-act="token-delete" data-id="{{ t.id }}" data-name="{{ t.name }}">删除</button>
+      </div>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">还没有访问密钥。Agent 需要一把 key 才能连接 MCP。</p>
+{% endif %}
+</div>

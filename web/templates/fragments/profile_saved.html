@@ -1,0 +1,14 @@
+<div data-profile-saved="1" data-profile-status="{{ 'created' if created else 'updated' }}">
+  <div class="kicker">机器配置</div>
+  <h3 id="profileTitle">已保存 {{ profile.name }}</h3>
+  <p>{{ "新机器已加入配置。" if created else "机器配置已更新。" }}</p>
+  <p class="sub mono">{{ profile.target }}</p>
+  {% if not acl_visible %}
+  <div class="inline-error" role="alert">
+    <p>已保存，但当前 token 的 ACL 不包含这台机器，它不会出现在列表中。请让管理员把 “{{ profile.name }}” 加入 tokens.json 的 profiles，或使用 “*”。</p>
+  </div>
+  {% endif %}
+  <div class="actions form-actions">
+    <button class="btn primary" type="button" data-close="profile">关闭</button>
+  </div>
+</div>

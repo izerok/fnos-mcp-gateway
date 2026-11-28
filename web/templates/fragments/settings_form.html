@@ -1,0 +1,46 @@
+<div class="kicker">运行时设置</div>
+<h3 id="adminTitle">手动配置</h3>
+<p class="sub">改动立即生效（不用重启容器）；保存在数据卷 /data/settings.json。留空的项保持现值。</p>
+
+{% if saved %}
+<div data-settings-saved="1" class="inline-ok" role="status"><p>已保存并生效。</p></div>
+{% endif %}
+{% if error %}<div class="inline-error" role="alert"><p>{{ error }}</p></div>{% endif %}
+
+<form class="settings-form" autocomplete="off"
+      hx-post="/api/panel/settings" hx-target="#adminModalBody" hx-swap="innerHTML">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <p class="settings-group">探测与机器列表</p>
+  {% for name, label, hint, lo, hi, step in fields %}
+  <div class="settings-field">
+    <label for="set-{{ name }}">{{ label }}</label>
+    <div class="settings-input">
+      <input id="set-{{ name }}" name="{{ name }}" type="number"
+             value="{{ values[name] }}" min="{{ lo }}" max="{{ hi }}" step="{{ step }}">
+      <span class="settings-unit">{{ hint }}</span>
+    </div>
+    {% if errors[name] %}<p class="field-error" role="alert">{{ errors[name] }}</p>{% endif %}
+  </div>
+  {% endfor %}
+
+  <p class="settings-group">限速（次数/窗口秒数；off = 不限速）</p>
+  {% for kind, label, default_off in rate_fields %}
+  <div class="settings-field">
+    <label for="set-rate-{{ kind }}">{{ label }}</label>
+    <div class="settings-input">
+      <input id="set-rate-{{ kind }}" name="rate_{{ kind }}" type="text"
+             value="{{ rate_texts[kind] }}" class="mono" spellcheck="false"
+             autocapitalize="off" placeholder="120/60 或 off">
+    </div>
+    {% if errors['rate_' + kind] %}<p class="field-error" role="alert">{{ errors['rate_' + kind] }}</p>{% endif %}
+  </div>
+  {% endfor %}
+
+  <p class="field-hint">限速写错格式会留在表单里不会保存；MCP 调用默认 off，其他项默认按 FR-35 的建议值。</p>
+
+  <div class="actions form-actions">
+    <button class="btn primary" type="submit">保存并生效</button>
+    <button class="btn" type="button" data-close="admin">取消</button>
+  </div>
+</form>

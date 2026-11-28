@@ -1,0 +1,54 @@
+<article class="row" id="row-{{ row.name }}" data-id="{{ row.name }}" data-bucket="{{ row.bucket }}"
+         data-identity="{{ row.identity or '未登录' }}">
+  <span class="rail {{ row.badge_cls }}"></span>
+  <div class="who">
+    <div class="name">
+      <i class="dot {{ row.badge_cls }}"></i>
+      <span class="mono">{{ row.name }}</span>
+      <span class="badge {{ row.badge_cls }}">{{ row.badge_label }}</span>
+      {% for tag, on in row.insecure_tags %}<span class="tag warn" title="该机器允许不安全连接，传输可能被窃听">{{ tag }}</span>{% endfor %}
+    </div>
+    {% if row.desc %}<div class="desc">{{ row.desc }}</div>{% endif %}
+    <div class="target">
+      <code>{{ row.target }}</code>
+      <div class="meta">
+        <span>{{ row.tls_text }}</span>
+        {% if row.sub %}<span>{{ row.sub }}</span>{% endif %}
+        <span>上次检查 {{ row.last_check }}{% if row.latency is not none %} · {{ row.latency }}ms{% endif %}</span>
+      </div>
+    </div>
+    {% if row.error %}<div class="err">{{ row.error }}</div>{% endif %}
+  </div>
+  <div class="side">
+    <div class="actions">
+    {% if row.badge == 'connected' %}
+      <button class="btn small primary" type="button"
+              hx-post="/api/profiles/{{ row.name }}/test" hx-target="closest .row" hx-swap="outerHTML">测试连接</button>
+      <button class="btn small" type="button" data-act="logout" data-id="{{ row.name }}"
+              {% if not row.can_manage_login %}disabled title="需要 admin 或 manage_login 能力"{% endif %}>本机退出</button>
+    {% elif row.badge == 'config' %}
+      {% if not row.can_manage_profiles %}<span class="busy-note">配置错误，请联系管理员修正</span>{% endif %}
+    {% elif row.badge in ('loggedout', 'unverified', 'expired') and row.can_login %}
+      <button class="btn small primary" type="button"
+              hx-post="/api/profiles/{{ row.name }}/login/start" hx-target="#loginModalBody" hx-swap="innerHTML"
+              {% if not row.can_manage_login %}disabled title="需要 admin 或 manage_login 能力"{% endif %}>登录</button>
+      <button class="btn small" type="button"
+              hx-post="/api/profiles/{{ row.name }}/probe" hx-target="closest .row" hx-swap="outerHTML">测试网络</button>
+    {% else %}
+      <button class="btn small" type="button"
+              hx-post="/api/profiles/{{ row.name }}/probe" hx-target="closest .row" hx-swap="outerHTML">测试网络</button>
+    {% endif %}
+    <button class="btn small" type="button"
+            hx-get="/api/profiles/{{ row.name }}/drawer" hx-target="#drawerContent" hx-swap="innerHTML">诊断</button>
+    {% if row.can_manage_profiles %}
+      <button class="btn small" type="button"
+              hx-get="/api/profiles/{{ row.name }}/edit/form" hx-target="#profileModalBody" hx-swap="innerHTML">编辑</button>
+      <button class="btn small danger-soft" type="button"
+              data-act="delete" data-id="{{ row.name }}">删除</button>
+    {% endif %}
+    {% if not row.can_manage_login and row.badge != 'config' %}
+      <span class="busy-note">当前 token 是 operator，没有登录 / 本机退出权限（需要 admin 或 manage_login 能力）。</span>
+    {% endif %}
+    </div>
+  </div>
+</article>

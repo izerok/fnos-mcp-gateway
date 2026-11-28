@@ -1,0 +1,72 @@
+<div class="kicker">机器配置</div>
+<h3 id="profileTitle">{{ "编辑 " ~ profile_name if is_edit else "添加机器" }}</h3>
+<p class="sub">只填写 NAS 的访问地址。账号登录仍走浏览器 OAuth，不在这里填密码。</p>
+
+{% if config_error %}
+<div class="inline-error" role="alert"><p>现有配置不完整：{{ config_error }}。修正后保存即可。</p></div>
+{% endif %}
+{% if error %}<div class="inline-error" role="alert"><p>{{ error }}</p></div>{% endif %}
+
+<form class="profile-form" autocomplete="off" hx-post="{{ action }}"
+      hx-target="#profileModalBody" hx-swap="innerHTML" hx-indicator="#profileSaveBtn"
+      hx-disabled-elt="#profileSaveBtn">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <label for="profileName">机器名</label>
+  <input id="profileName" name="name" type="text" value="{{ values.name }}"
+         maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" required
+         spellcheck="false" autocapitalize="off"
+         {% if is_edit %}readonly aria-describedby="profileNameHint"{% endif %}>
+  {% if is_edit %}<p class="field-hint" id="profileNameHint">机器名保存后不可修改，避免丢失已有登录 session。</p>{% endif %}
+  {% if errors.name %}<p class="field-error" role="alert">{{ errors.name }}</p>{% endif %}
+
+  <div class="form-row">
+    <div>
+      <label for="profileHost">地址</label>
+      <input id="profileHost" name="host" type="text" value="{{ values.host }}"
+             maxlength="253" placeholder="192.168.1.10 或 nas.example.com"
+             required spellcheck="false" autocapitalize="off">
+      {% if errors.host %}<p class="field-error" role="alert">{{ errors.host }}</p>{% endif %}
+    </div>
+    <div>
+      <label for="profilePort">端口</label>
+      <input id="profilePort" name="port" type="number" value="{{ values.port }}"
+             min="1" max="65535" inputmode="numeric" required>
+      {% if errors.port %}<p class="field-error" role="alert">{{ errors.port }}</p>{% endif %}
+    </div>
+  </div>
+
+  <label for="profileScheme">连接方式</label>
+  <select id="profileScheme" name="scheme">
+    <option value="https" {% if values.scheme == 'https' %}selected{% endif %}>HTTPS（推荐）</option>
+    <option value="http" {% if values.scheme == 'http' %}selected{% endif %}>HTTP（仅可信内网）</option>
+  </select>
+  {% if errors.scheme %}<p class="field-error" role="alert">{{ errors.scheme }}</p>{% endif %}
+
+  <label class="check" for="profileInsecure">
+    <input id="profileInsecure" name="allow_insecure_http" type="checkbox" value="on"
+           {% if values.allow_insecure_http %}checked{% endif %}>
+    <span>允许 HTTP 明文连接</span>
+  </label>
+  <p class="field-hint" id="httpHint">选择 HTTP 时必须勾选；明文传输可能被同一网络窃听。</p>
+  {% if errors.allow_insecure_http %}<p class="field-error" role="alert">{{ errors.allow_insecure_http }}</p>{% endif %}
+
+  <label class="check" for="profileTlsInsecure">
+    <input id="profileTlsInsecure" name="tls_insecure" type="checkbox" value="on"
+           {% if values.tls_insecure %}checked{% endif %}>
+    <span>跳过 TLS 证书校验（自签名证书）</span>
+  </label>
+  <p class="field-hint">只在确认目标可信时开启；这会允许中间人证书。</p>
+
+  <label for="profileDescription">备注（可选）</label>
+  <input id="profileDescription" name="description" type="text" value="{{ values.description }}"
+         maxlength="200" placeholder="例如：家里的 fnOS">
+  {% if errors.description %}<p class="field-error" role="alert">{{ errors.description }}</p>{% endif %}
+
+  <p class="field-hint">保存后会从容器访问这个地址。请只填写你拥有或被授权管理的 NAS。高级字段（如 authorization_hosts、allow_dangerous）保持原值。</p>
+
+  <div class="actions form-actions">
+    <button class="btn primary" id="profileSaveBtn" type="submit">保存</button>
+    <button class="btn" type="button" data-close="profile">取消</button>
+  </div>
+</form>

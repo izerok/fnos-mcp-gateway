@@ -1,0 +1,1 @@
+{"tokens":[{"id":"t_admin_example","name":"admin","profiles":["*"],"role":"admin","sha256":"<sha256-of-your-admin-token>"},{"id":"t_operator_example","name":"operator-home","profiles":["home"],"role":"operator","sha256":"<sha256-of-your-operator-token>"}]}

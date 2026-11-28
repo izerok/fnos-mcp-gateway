@@ -1,0 +1,78 @@
+{# Roster fragment: summary + machine list, the probe-all swap target.
+   The wrapper div#roster is part of the fragment; only the initial
+   render (auto_probe=true) carries hx-trigger="load", so the
+   probe-all response cannot re-fire it. Empty states live INSIDE the
+   roster so an HTMX roster swap (e.g. after deleting the last machine)
+   lands on the same empty state a full page load would show.
+   data-deleted marks a roster rendered as the answer to a delete. #}
+<div id="roster"{% if oob %} data-oob="1" hx-swap-oob="outerHTML"{% endif %}{% if deleted %} data-deleted="{{ deleted }}"{% endif %}{% if auto_probe %} hx-post="/api/profiles/probe-all" hx-trigger="load" hx-swap="outerHTML"{% endif %}>
+{% if busy %}<div id="probeBusy" data-busy="{{ busy | join(',') }}" hidden></div>{% endif %}
+<section class="paper kpi" aria-label="汇总">
+  <div class="kpi-top">
+    <div class="big-stat"><strong><span id="bigOk">{{ summary.counts.connected }}</span> / {{ summary.counts.total }}</strong><span>台已连接</span></div>
+    {% include "fragments/summary.html" %}
+    <div class="kpi-actions">
+      <span class="last-scan" id="lastScan">最后扫描 {{ last_scan }}</span>
+      <button class="btn primary" id="testAllBtn" type="button" aria-label="全部测试网络（仅网络层）" title="全部测试网络（仅网络层）"
+              hx-post="/api/profiles/probe-all" hx-target="#roster" hx-swap="outerHTML">全部测试</button>
+    </div>
+  </div>
+  <div class="dist" aria-hidden="true">
+    {% if summary.counts.connected %}<i class="seg s-ok" style="flex:{{ summary.counts.connected }}"></i>{% endif %}
+    {% if summary.counts.pending %}<i class="seg s-wait" style="flex:{{ summary.counts.pending }}"></i>{% endif %}
+    {% if summary.counts.error %}<i class="seg s-err" style="flex:{{ summary.counts.error }}"></i>{% endif %}
+  </div>
+  <p class="kpi-legend"><i class="sw s-ok"></i>已连接 <i class="sw s-wait"></i>待登录 <i class="sw s-err"></i>异常（未测试 {{ summary.counts.untested }} 台）</p>
+</section>
+
+<section class="paper roster">
+  <div class="section-head">
+    <div><h2>机器{% if summary.counts.total %} <span class="count-pill">{{ summary.counts.total }}</span>{% endif %}</h2><p class="sub">点一行查看四层诊断</p></div>
+    <div class="roster-tools">
+      {% if can_manage_profiles %}
+      <button class="btn" id="addProfileBtn" type="button"
+              hx-get="/api/profiles/new/form" hx-target="#profileModalBody" hx-swap="innerHTML">添加机器</button>
+      {% endif %}
+      <div class="segmented" role="group" aria-label="筛选机器">
+        <button class="chip active" data-filter="all" type="button" aria-pressed="true"
+                hx-get="/api/profiles/rows?bucket=all" hx-target="#rows" hx-swap="innerHTML">全部 {{ summary.counts.total }}</button>
+        <button class="chip" data-filter="connected" type="button" aria-pressed="false"
+                hx-get="/api/profiles/rows?bucket=connected" hx-target="#rows" hx-swap="innerHTML">已连接 {{ summary.counts.connected }}</button>
+        <button class="chip" data-filter="pending" type="button" aria-pressed="false"
+                hx-get="/api/profiles/rows?bucket=pending" hx-target="#rows" hx-swap="innerHTML">待登录 {{ summary.counts.pending }}</button>
+        <button class="chip" data-filter="error" type="button" aria-pressed="false"
+                hx-get="/api/profiles/rows?bucket=error" hx-target="#rows" hx-swap="innerHTML">异常 {{ summary.counts.error }}</button>
+      </div>
+    </div>
+  </div>
+  <div id="rows">
+    {% include "fragments/rows.html" %}
+  </div>
+  {% if can_manage_profiles %}
+  <p class="footnote">配置写入服务端 profiles 存储（通常为 /data/profiles.json，权限 0600）。这里只保存地址与连接选项，不保存 NAS 账号或密码。</p>
+  {% else %}
+  <p class="footnote">机器配置由管理员维护，当前 token 只读。添加或修改机器请联系管理员。</p>
+  {% endif %}
+</section>
+
+{% if empty_kind == "zero_config" %}
+<div class="paper empty-state" role="status">
+  <h2>还没有配置机器</h2>
+  {% if can_manage_profiles %}
+  <p>服务端 profiles 里没有任何机器。点击右上角“添加机器”，填写地址和端口即可。</p>
+  {% else %}
+  <p>服务端 profiles 里没有任何机器。请联系管理员添加。</p>
+  {% endif %}
+</div>
+{% elif empty_kind == "acl_empty" %}
+<div class="paper empty-state" role="status">
+  <h2>当前 token 没有可见的机器</h2>
+  <p>这台面板已经配置了机器，但当前 token 一台也看不到。请检查 tokens.json 里这个 token 的授权范围。</p>
+</div>
+{% elif empty_kind == "config_only" %}
+<div class="paper empty-state" role="status">
+  <h2>机器配置不完整</h2>
+  <p>有 {{ config_errors|length }} 台机器配置不完整，已跳过。{% if can_manage_profiles %}点机器行的“编辑”修正配置。{% else %}请联系管理员修正。{% endif %}</p>
+</div>
+{% endif %}
+</div>

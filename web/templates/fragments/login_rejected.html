@@ -1,0 +1,10 @@
+{# FR-21 rejection: the authorization URL is NEVER rendered here —
+   no link, no URL text, only the Chinese reason. Served with
+   Cache-Control: no-store by the route. #}
+<div class="kicker">登录 {{ profile.name }}</div>
+<h3 id="loginTitle">授权链接被拒绝</h3>
+<div class="inline-error" role="alert" data-error-code="login.failed"><p>授权链接被拒绝：{{ reason }}</p></div>
+<p class="sub">服务端没有展示这个链接。请检查这台机器的配置，或重新发起登录。</p>
+<div class="actions">
+  <button class="btn primary" type="button" data-close="login">关闭</button>
+</div>

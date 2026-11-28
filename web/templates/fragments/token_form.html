@@ -1,0 +1,69 @@
+<div class="kicker">访问密钥</div>
+<h3 id="adminTitle">{{ ("编辑密钥 " ~ values.name) if is_edit else "新建密钥" }}</h3>
+<p class="sub">Agent 用这把 key 连接 MCP。ACL 决定它能操作哪些机器；明文加密保存，可随时在列表复制。</p>
+
+{% if error %}<div class="inline-error" role="alert"><p>{{ error }}</p></div>{% endif %}
+
+<form class="key-form" autocomplete="off" hx-post="{{ action }}"
+      hx-target="#adminModalBody" hx-swap="innerHTML">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% if is_edit %}<p class="field-hint mono">ID：{{ key_id }}</p>{% endif %}
+
+  <label for="keyName">名称</label>
+  <input id="keyName" name="name" type="text" value="{{ values.name }}"
+         maxlength="64" required spellcheck="false" autocapitalize="off">
+  {% if errors.name %}<p class="field-error" role="alert">{{ errors.name }}</p>{% endif %}
+
+  <label for="keyRole">角色</label>
+  <select id="keyRole" name="role">
+    <option value="operator" {% if values.role == 'operator' %}selected{% endif %}>operator（只读与测试）</option>
+    <option value="admin" {% if values.role == 'admin' %}selected{% endif %}>admin（含登录 / 本机退出）</option>
+  </select>
+  <p class="field-hint">operator 默认不能登录或本机退出；勾选下方“允许通过 MCP 发起登录”即可。admin 始终可以。</p>
+  {% if errors.role %}<p class="field-error" role="alert">{{ errors.role }}</p>{% endif %}
+
+  <fieldset class="acl">
+    <legend>机器 ACL</legend>
+    <label class="check" for="keyScopeAll">
+      <input id="keyScopeAll" name="scope_all" type="checkbox" value="on"
+             {% if values.scope_all %}checked{% endif %}>
+      <span>全部机器（包含以后新增的）</span>
+    </label>
+    {% if profiles %}
+    <div class="acl-grid">
+      {% for name in profiles %}
+      <label class="check">
+        <input type="checkbox" name="profiles" value="{{ name }}"
+               {% if name in values.profiles %}checked{% endif %}>
+        <span class="mono">{{ name }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="field-hint">当前还没有可用机器；可以先保存，添加机器后再回来调整 ACL。</p>
+    {% endif %}
+    {% if config_errors %}
+    <p class="field-hint">有 {{ config_errors|length }} 台机器配置不完整，暂不可选。</p>
+    {% endif %}
+    {% if errors.profiles %}<p class="field-error" role="alert">{{ errors.profiles }}</p>{% endif %}
+  </fieldset>
+
+  <fieldset class="caps">
+    <legend>附加能力</legend>
+    <label class="check">
+      <input type="checkbox" name="capabilities" value="manage_login"
+             {% if 'manage_login' in values.capabilities %}checked{% endif %}>
+      <span>允许通过 MCP 发起登录 / 本机退出（operator 需要）</span>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="capabilities" value="manage_profiles"
+             {% if 'manage_profiles' in values.capabilities %}checked{% endif %}>
+      <span>保留 manage_profiles 能力（旧配置兼容；面板已仅限管理员）</span>
+    </label>
+  </fieldset>
+
+  <div class="actions form-actions">
+    <button class="btn primary" type="submit">{{ "保存" if is_edit else "创建密钥" }}</button>
+    <button class="btn" type="button" data-close="admin">取消</button>
+  </div>
+</form>

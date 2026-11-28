@@ -1,0 +1,29 @@
+<div data-token-created="1" data-token-id="{{ entry.id }}">
+  <div class="kicker">访问密钥</div>
+  <h3 id="adminTitle">{{ ("已轮换 " ~ entry.name) if rotated else ("已创建 " ~ entry.name) }}</h3>
+  {% if rotated %}
+  <p>旧密钥已立即失效，请把新密钥更新到所有客户端。</p>
+  {% else %}
+  <p>密钥已加密保存，之后可在列表再次复制；现在也可以直接复制到客户端。</p>
+  {% endif %}
+
+  <div class="secret-block">
+    <div class="secret-head">
+      <span>密钥</span>
+      <span class="field-hint">点击文本可全选</span>
+    </div>
+    <p class="token-plain mono" id="tokenPlaintext" tabindex="0"
+       aria-label="密钥明文">{{ plaintext }}</p>
+    <div class="secret-copy">
+      <button class="btn primary" id="copyTokenBtn" type="button">复制密钥</button>
+      <button class="btn" id="copyTokenConfigBtn" type="button">复制客户端配置</button>
+    </div>
+    <p class="field-hint">配置包含 MCP 地址 <span class="mono">{{ mcp_url }}</span> 与这把密钥，可直接粘贴到支持 Streamable HTTP 的客户端。</p>
+  </div>
+
+  <p class="field-hint">服务端加密保存明文，仅登录面板后可复制；MCP 校验仍使用 SHA-256。</p>
+  <pre id="tokenClientConfig" hidden>{{ client_config }}</pre>
+  <div class="actions form-actions">
+    <button class="btn" type="button" data-close="admin">我已保存，关闭</button>
+  </div>
+</div>

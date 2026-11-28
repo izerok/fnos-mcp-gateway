@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">能力清单</p>
+    <h1>这个网关能做什么</h1>
+    <p class="page-lede">工具目录由服务端的注册表生成，和 MCP 实际暴露的一致；写操作的门禁也在这里写明。</p>
+  </div>
+  <a class="btn" href="/api/capabilities.json">下载 JSON</a>
+</header>
+
+<section class="paper cap-strip" aria-label="运行环境">
+  <div class="cap-chips">
+    <span class="cap-chip"><b>fnos-cli</b> {{ runtime.cli_version }}</span>
+    <span class="cap-chip"><b>工具</b> {{ counts.total }} <span class="cap-chip-sub">读 {{ counts.read }} · 写 {{ counts.write }}</span></span>
+    <span class="cap-chip"><b>Compose</b> {{ counts.compose }} 个工具</span>
+    <span class="cap-chip"><b>数据目录</b> <code>{{ runtime.data_dir }}</code>
+      <span class="cap-chip-sub">{{ "可写" if runtime.writable else "不可写" }}</span></span>
+    <span class="cap-chip"><b>MCP</b> {{ runtime.protocol }}</span>
+  </div>
+</section>
+
+<section class="paper cap-token" aria-label="当前密钥">
+  <div class="section-head">
+    <div><h2>当前身份</h2><p class="sub">面板会话是管理员；这里说明它能看到和能做什么。</p></div>
+  </div>
+  <dl class="kv">
+    <div><dt>角色</dt><dd>{{ "管理员（admin）" if token.role == "admin" else "操作员（operator）" }}</dd></div>
+    <div><dt>附加能力</dt><dd>{% if token.capabilities %}{{ token.capabilities|join("、") }}{% else %}无（使用角色默认）{% endif %}</dd></div>
+    <div><dt>机器 ACL</dt><dd class="mono">{{ token.profiles|join("、") if token.profiles != ["*"] else "*（全部机器）" }}</dd></div>
+    <div><dt>不可见机器</dt><dd>{{ hidden }} 台{% if hidden %}（由 ACL 隐藏，不是被禁用）{% endif %}</dd></div>
+    <div><dt>写操作门槛</dt><dd>admin 或 manage_deploy ＋ 目标机器 allow_dangerous ＋ 请求里 confirm=true</dd></div>
+  </dl>
+</section>
+
+<section class="paper cap-catalog">
+  <div class="section-head">
+    <div><h2>工具目录 <span class="count-pill">{{ counts.total }}</span></h2>
+      <p class="sub">按用途分组；展开一组看参数与端点。只读工具只要求登录，写工具走部署门禁。</p></div>
+  </div>
+  <p class="cap-legend"><span class="badge read">只读</span> 不改状态 <span class="badge write">写</span> 需 confirm=true 与 allow_dangerous</p>
+
+  {% for group in groups %}
+  <details class="cap-group"{% if loop.first %} open{% endif %}>
+    <summary>
+      <span class="cap-group-name">{{ group.name }}</span>
+      <span class="count-pill">{{ group.tools|length }}</span>
+      <span class="cap-rollup">只读 {{ group.read }} · 写 {{ group.write }}</span>
+    </summary>
+    <div class="cap-rows">
+      {% for tool in group.tools %}
+      <article class="cap-row" id="cap-{{ tool.name }}">
+        <div class="cap-row-head">
+          <code class="cap-name">{{ tool.name }}</code>
+          <span class="badge {{ 'write' if tool.kind == 'write' else 'read' }}">{{ "写" if tool.kind == "write" else "只读" }}</span>
+          {% for gate in tool.gates %}<span class="tag gate">{{ gate }}</span>{% endfor %}
+        </div>
+        <p class="cap-desc">{{ tool.description }}</p>
+        {% if tool.endpoint %}<p class="cap-endpoint"><span>端点</span> <code>{{ tool.endpoint }}</code></p>{% endif %}
+        <details class="cap-detail">
+          <summary>参数（{{ tool.params|length }}）与调用示意</summary>
+          {% if tool.params %}
+          <div class="cap-table-wrap">
+            <table class="cap-table">
+              <thead><tr><th>参数</th><th>类型</th><th>必填</th><th>取值</th></tr></thead>
+              <tbody>
+              {% for p in tool.params %}
+                <tr><td class="mono">{{ p.name }}</td><td>{{ p.type }}</td>
+                  <td>{{ "是" if p.required else "否" }}</td>
+                  <td>{% if p.enum %}<span class="mono">{{ p.enum|join(" / ") }}</span>{% else %}—{% endif %}</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="field-hint">这个工具没有参数。</p>
+          {% endif %}
+          <details class="cap-schema">
+            <summary>JSON Schema</summary>
+            <pre>{{ tool.schema_json }}</pre>
+          </details>
+        </details>
+      </article>
+      {% endfor %}
+    </div>
+  </details>
+  {% endfor %}
+</section>
+
+<section class="paper cap-profiles">
+  <div class="section-head">
+    <div><h2>机器授权 <span class="count-pill">{{ profiles|length }}</span></h2>
+      <p class="sub">写工具只对被允许的机器开放；allow_dangerous 在机器配置里维护，表单不覆盖它。</p></div>
+  </div>
+  {% if profiles %}
+  <div class="cap-table-wrap">
+    <table class="cap-table cap-profile-table">
+      <thead><tr><th>机器</th><th>状态</th><th>写操作</th><th>传输</th></tr></thead>
+      <tbody>
+      {% for p in profiles %}
+        <tr>
+          <td><span class="mono">{{ p.name }}</span>{% if p.description %}<span class="cap-sub">{{ p.description }}</span>{% endif %}</td>
+          <td><span class="badge {{ p.badge_cls }}">{{ p.status }}</span></td>
+          <td>{% if p.allow_dangerous %}<span class="badge write">已解锁</span>{% else %}<span class="badge idle">未开启</span>{% endif %}</td>
+          <td>{% if p.tls_insecure %}<span class="tag warn">跳过 TLS 校验</span>{% elif p.allow_insecure_http %}<span class="tag warn">HTTP 明文</span>{% else %}HTTPS 校验{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">还没有可见的机器。</p>
+  {% endif %}
+  <p class="footnote">写工具调用示例：在请求体里带 <code>confirm: true</code>；audit 只记录参数摘要（SHA-256），不记录原值。</p>
+</section>
+
+<section class="paper cap-connect" aria-label="接入">
+  <div class="section-head">
+    <div><h2>接入</h2><p class="sub">地址与访问密钥共用主面板的 ACL。</p></div>
+  </div>
+  <p class="mcp-endpoint">{{ runtime.mcp_url }}</p>
+  <div class="actions">
+    <button class="btn primary" id="copyConfigBtn" type="button">复制客户端配置</button>
+    <a class="btn" href="/api/capabilities.json">capabilities.json</a>
+  </div>
+  <p class="field-hint">复制内容里的 <code>&lt;token&gt;</code> 需替换为“访问密钥”页面里任意一把有效 key；<code>X-FNOS-Profile</code> 可固定到单台机器。</p>
+</section>
+{% endblock %}

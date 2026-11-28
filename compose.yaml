@@ -1,0 +1,43 @@
+services:
+  fnos-mcp:
+    build: .
+    image: ghcr.io/izerok/fnos-mcp-gateway:0.1.0
+    container_name: fnos-mcp
+    restart: unless-stopped
+    # Single replica, single worker. Do not scale this service.
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    ports:
+      # Bind loopback only; expose via a reverse proxy (Caddy) on the LAN/VPN.
+      - "127.0.0.1:8000:8000"
+    environment:
+      MCP_PORT: "8000"
+      FNOS_PROFILES_PATH: /etc/fnos-mcp/profiles.json
+      # Read-only seed -> writable store for panel add/edit (0600).
+      FNOS_PROFILES_STORE: /data/profiles.json
+      FNOS_TOKENS_PATH: /run/secrets/mcp_tokens.json
+      FNOS_DATA_DIR: /data
+      PANEL_SESSION_SECRET_FILE: /run/secrets/panel_session_secret
+      # SSL_CERT_FILE: /etc/fnos-mcp/ca-bundle.pem  # only with a private CA
+    volumes:
+      - fnos-data:/data
+      - ./config/profiles.json:/etc/fnos-mcp/profiles.json:ro
+      # - ./config/ca-bundle.pem:/etc/fnos-mcp/ca-bundle.pem:ro  # private CA only
+    secrets:
+      - mcp_tokens.json
+      - panel_session_secret
+
+volumes:
+  fnos-data:
+
+secrets:
+  mcp_tokens.json:
+    file: ./config/tokens.json
+  panel_session_secret:
+    file: ./config/panel-session.key

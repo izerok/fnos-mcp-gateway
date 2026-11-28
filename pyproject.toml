@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fnos-mcp"
+version = "0.1.0"
+description = "fnOS multi-machine MCP gateway: one container manages multiple fnOS NAS (panel + MCP)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "jinja2==3.1.5",
+    "httpx==0.28.1",
+    "python-multipart==0.0.20",
+    "starlette==0.41.3",
+    # FastMCP 2 (Streamable HTTP, POST /mcp). Pinned as a working set:
+    # fastmcp 2.10.6 needs pydantic < 2.12 to import (its Settings class
+    # trips pydantic >= 2.12 FieldInfo validation), and mcp 1.30 pulls
+    # starlette 1.x unless starlette is pinned (FastAPI 0.115.6 needs
+    # starlette < 0.42). Verified: pytest 215/215 with this exact set.
+    "fastmcp==2.10.6",
+    "mcp==1.30.0",
+    "pydantic==2.11.10",
+    "pydantic-settings==2.10.1",
+    # Used to encrypt agent-key plaintext at rest (panel list copy).
+    "cryptography==50.0.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.2",
+    "anyio==4.7.0",
+]
+
+[project.scripts]
+fnos-mcp = "fnos_mcp.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

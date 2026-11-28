@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>fnOS 接入面板</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">▦</span>
+      <div>
+        <strong>fnOS 接入面板</strong>
+        <span class="sub">多机 MCP 网关，配置与连通性</span>
+      </div>
+    </div>
+    {% if token %}
+    <nav class="mainnav" aria-label="主导航">
+      <a class="navlink{% if nav_active == 'machines' %} active{% endif %}" href="/"
+         {% if nav_active == 'machines' %}aria-current="page"{% endif %}>机器</a>
+      <a class="navlink{% if nav_active == 'capabilities' %} active{% endif %}" href="/capabilities"
+         {% if nav_active == 'capabilities' %}aria-current="page"{% endif %}>能力<span class="navcount">{{ tool_count }}</span></a>
+    </nav>
+    {% endif %}
+    <div class="top-right">
+      <span class="health"><i class="dot"></i><span class="hide-m">容器正常</span></span>
+      <span class="sep hide-m">|</span><span class="hide-m">CLI {{ cli_version }}</span>
+      {% if token %}<span class="sep hide-m">|</span><span class="hide-m">{{ token.name }}</span>
+      <button class="btn small" id="panelSettingsBtn" type="button"
+              hx-get="/api/panel/settings/form" hx-target="#adminModalBody" hx-swap="innerHTML">设置</button>
+      <button class="btn small" id="panelPasswordBtn" type="button"
+              hx-get="/api/panel/password/form" hx-target="#adminModalBody" hx-swap="innerHTML">修改密码</button>
+      <button class="btn small" id="panelLogoutBtn" type="button">退出面板</button>{% endif %}
+    </div>
+  </div>
+</header>
+<main class="page">
+{% block content %}{% endblock %}
+</main>
+{# Overlays live outside <main> so app.js can make the page inert
+   without disabling the open drawer/modal itself. #}
+{% block overlays %}{% endblock %}
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="liveRegion" class="sr-only" role="status" aria-live="polite"></div>
+{# HTMX vendored locally (web/static/htmx.min.js, v2.0.7, SHA-256 in
+   docs/frontend.md); no CDN. app.js only adds focus/inert/live-region
+   behaviour and clipboard helpers on top of HTMX. #}
+<script src="/static/htmx.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
