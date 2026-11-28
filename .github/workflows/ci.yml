@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" ruff
       - name: Lint (pyflakes)
         run: ruff check --select F src/ tests/
       - name: Tests
